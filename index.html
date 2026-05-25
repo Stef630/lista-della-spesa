@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lista Spesa Visuale</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2563eb;
+      --buy: #fef3c7;
+      --done: #dcfce7;
+      --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246, 247, 249, 0.92);
+      backdrop-filter: blur(10px);
+      padding: 12px 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      margin: 6px 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 10px;
+      text-align: center;
+      box-shadow: var(--shadow);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 20px;
+    }
+
+    .stat span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    input {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+      background: var(--card);
+    }
+
+    button {
+      border: none;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #111827;
+    }
+
+    button.danger {
+      background: #dc2626;
+      width: 100%;
+      margin-top: 12px;
+    }
+
+    section {
+      margin: 22px 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .category {
+      margin-bottom: 18px;
+    }
+
+    .category h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #374151;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .item {
+      min-height: 82px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px;
+      user-select: none;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .item:active {
+      transform: scale(0.96);
+    }
+
+    .item.to-buy {
+      background: var(--buy);
+      border-color: #f59e0b;
+    }
+
+    .item.bought {
+      background: var(--done);
+      border-color: #22c55e;
+      opacity: 0.88;
+    }
+
+    .emoji {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .name {
+      font-size: 12px;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .empty {
+      background: var(--card);
+      border: 1px dashed #cbd5e1;
+      border-radius: 20px;
+      padding: 18px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+    }
+
+    .bottom-bar-inner {
+      max-width: 520px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    @media (max-width: 380px) {
+      .grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Lista Spesa</h1>
+      <p class="subtitle">Tocca un prodotto per spostarlo tra catalogo, da comprare e comprato.</p>
+
+      <div class="stats">
+        <div class="stat">
+          <strong id="countCatalog">0</strong>
+          <span>Catalogo</span>
+        </div>
+        <div class="stat">
+          <strong id="countToBuy">0</strong>
+          <span>Da comprare</span>
+        </div>
+        <div class="stat">
+          <strong id="countBought">0</strong>
+          <span>Comprati</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="Cerca prodotto..." />
+        <button id="clearSearch">Pulisci</button>
+      </div>
+    </header>
+
+    <section>
+      <div class="section-title">
+        <h2>Da comprare</h2>
+        <span class="hint">tocca quando lo compri</span>
+      </div>
+      <div id="toBuyList" class="grid"></div>
+      <div id="toBuyEmpty" class="empty">Nessun prodotto da comprare.</div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Comprati</h2>
+        <span class="hint">tocca per rimettere nel catalogo</span>
+      </div>
+      <div id="boughtList" class="grid"></div>
+      <div id="boughtEmpty" class="empty">Nessun prodotto comprato.</div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Catalogo</h2>
+        <span class="hint">tocca per aggiungere alla lista</span>
+      </div>
+      <div id="catalog"></div>
+    </section>
+  </main>
+
+  <div class="bottom-bar">
+    <div class="bottom-bar-inner">
+      <button class="secondary" id="resetBought">Fine spesa</button>
+      <button class="danger" id="resetAll">Reset totale</button>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "listaSpesaVisuale_v1";
+
+    const defaultProducts = [
+      { id: "mele", name: "Mele", emoji: "🍎", category: "Frutta", state: "catalog" },
+      { id: "banane", name: "Banane", emoji: "🍌", category: "Frutta", state: "catalog" },
+      { id: "arance", name: "Arance", emoji: "🍊", category: "Frutta", state: "catalog" },
+      { id: "fragole", name: "Fragole", emoji: "🍓", category: "Frutta", state: "catalog" },
+
+      { id: "insalata", name: "Insalata", emoji: "🥬", category: "Verdura", state: "catalog" },
+      { id: "pomodori", name: "Pomodori", emoji: "🍅", category: "Verdura", state: "catalog" },
+      { id: "carote", name: "Carote", emoji: "🥕", category: "Verdura", state: "catalog" },
+      { id: "patate", name: "Patate", emoji: "🥔", category: "Verdura", state: "catalog" },
+
+      { id: "pane", name: "Pane", emoji: "🥖", category: "Pane e pasta", state: "catalog" },
+      { id: "pasta", name: "Pasta", emoji: "🍝", category: "Pane e pasta", state: "catalog" },
+      { id: "riso", name: "Riso", emoji: "🍚", category: "Pane e pasta", state: "catalog" },
+      { id: "pizza", name: "Pizza", emoji: "🍕", category: "Pane e pasta", state: "catalog" },
+
+      { id: "latte", name: "Latte", emoji: "🥛", category: "Frigo", state: "catalog" },
+      { id: "uova", name: "Uova", emoji: "🥚", category: "Frigo", state: "catalog" },
+      { id: "formaggio", name: "Formaggio", emoji: "🧀", category: "Frigo", state: "catalog" },
+      { id: "yogurt", name: "Yogurt", emoji: "🥣", category: "Frigo", state: "catalog" },
+
+      { id: "acqua", name: "Acqua", emoji: "💧", category: "Bevande", state: "catalog" },
+      { id: "caffe", name: "Caffè", emoji: "☕", category: "Bevande", state: "catalog" },
+      { id: "te", name: "Tè", emoji: "🍵", category: "Bevande", state: "catalog" },
+      { id: "succo", name: "Succo", emoji: "🧃", category: "Bevande", state: "catalog" },
+
+      { id: "olio", name: "Olio", emoji: "🫒", category: "Dispensa", state: "catalog" },
+      { id: "sale", name: "Sale", emoji: "🧂", category: "Dispensa", state: "catalog" },
+      { id: "tonno", name: "Tonno", emoji: "🥫", category: "Dispensa", state: "catalog" },
+      { id: "biscotti", name: "Biscotti", emoji: "🍪", category: "Dispensa", state: "catalog" },
+
+      { id: "sapone", name: "Sapone", emoji: "🧼", category: "Casa e igiene", state: "catalog" },
+      { id: "carta", name: "Carta", emoji: "🧻", category: "Casa e igiene", state: "catalog" },
+      { id: "detersivo", name: "Detersivo", emoji: "🧴", category: "Casa e igiene", state: "catalog" },
+      { id: "spugne", name: "Spugne", emoji: "🧽", category: "Casa e igiene", state: "catalog" }
+    ];
+
+    let products = loadProducts();
+
+    const catalog = document.getElementById("catalog");
+    const toBuyList = document.getElementById("toBuyList");
+    const boughtList = document.getElementById("boughtList");
+    const toBuyEmpty = document.getElementById("toBuyEmpty");
+    const boughtEmpty = document.getElementById("boughtEmpty");
+    const searchInput = document.getElementById("searchInput");
+    const clearSearch = document.getElementById("clearSearch");
+    const resetBought = document.getElementById("resetBought");
+    const resetAll = document.getElementById("resetAll");
+
+    function loadProducts() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : defaultProducts;
+    }
+
+    function saveProducts() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    }
+
+    function nextState(currentState) {
+      if (currentState === "catalog") return "to-buy";
+      if (currentState === "to-buy") return "bought";
+      return "catalog";
+    }
+
+    function updateProductState(id) {
+      products = products.map(product => {
+        if (product.id !== id) return product;
+        return { ...product, state: nextState(product.state) };
+      });
+      saveProducts();
+      render();
+    }
+
+    function createItem(product) {
+      const button = document.createElement("div");
+      button.className = `item ${product.state === "to-buy" ? "to-buy" : ""} ${product.state === "bought" ? "bought" : ""}`;
+      button.setAttribute("role", "button");
+      button.setAttribute("tabindex", "0");
+      button.innerHTML = `
+        <div class="emoji">${product.emoji}</div>
+        <div class="name">${product.name}</div>
+      `;
+      button.addEventListener("click", () => updateProductState(product.id));
+      button.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") updateProductState(product.id);
+      });
+      return button;
+    }
+
+    function groupByCategory(items) {
+      return items.reduce((groups, item) => {
+        if (!groups[item.category]) groups[item.category] = [];
+        groups[item.category].push(item);
+        return groups;
+      }, {});
+    }
+
+    function renderCatalog(items) {
+      catalog.innerHTML = "";
+      const grouped = groupByCategory(items);
+
+      Object.entries(grouped).forEach(([category, categoryItems]) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "category";
+
+        const title = document.createElement("h3");
+        title.textContent = category;
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        categoryItems.forEach(item => grid.appendChild(createItem(item)));
+
+        wrapper.appendChild(title);
+        wrapper.appendChild(grid);
+        catalog.appendChild(wrapper);
+      });
+    }
+
+    function renderList(container, items, emptyElement) {
+      container.innerHTML = "";
+      items.forEach(item => container.appendChild(createItem(item)));
+      emptyElement.style.display = items.length ? "none" : "block";
+    }
+
+    function renderStats() {
+      document.getElementById("countCatalog").textContent = products.filter(p => p.state === "catalog").length;
+      document.getElementById("countToBuy").textContent = products.filter(p => p.state === "to-buy").length;
+      document.getElementById("countBought").textContent = products.filter(p => p.state === "bought").length;
+    }
+
+    function render() {
+      const query = searchInput.value.trim().toLowerCase();
+
+      const filteredCatalog = products.filter(product => {
+        const matchesSearch = product.name.toLowerCase().includes(query) || product.category.toLowerCase().includes(query);
+        return product.state === "catalog" && matchesSearch;
+      });
+
+      const toBuy = products.filter(product => product.state === "to-buy");
+      const bought = products.filter(product => product.state === "bought");
+
+      renderCatalog(filteredCatalog);
+      renderList(toBuyList, toBuy, toBuyEmpty);
+      renderList(boughtList, bought, boughtEmpty);
+      renderStats();
+    }
+
+    searchInput.addEventListener("input", render);
+
+    clearSearch.addEventListener("click", () => {
+      searchInput.value = "";
+      render();
+    });
+
+    resetBought.addEventListener("click", () => {
+      products = products.map(product => ({ ...product, state: "catalog" }));
+      saveProducts();
+      render();
+    });
+
+    resetAll.addEventListener("click", () => {
+      const confirmReset = confirm("Vuoi davvero azzerare tutta la lista?");
+      if (!confirmReset) return;
+      products = defaultProducts;
+      saveProducts();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
