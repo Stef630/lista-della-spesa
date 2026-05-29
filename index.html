@@ -89,14 +89,20 @@
       margin-bottom: 14px;
     }
 
-    input {
-      flex: 1;
+    input,
+    select {
+      width: 100%;
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 12px 14px;
       font-size: 15px;
       outline: none;
       background: var(--card);
+      color: var(--text);
+    }
+
+    .toolbar input {
+      flex: 1;
     }
 
     button {
@@ -112,12 +118,6 @@
 
     button.secondary {
       background: #111827;
-    }
-
-    button.danger {
-      background: #dc2626;
-      width: 100%;
-      margin-top: 12px;
     }
 
     section {
@@ -139,6 +139,32 @@
     .hint {
       font-size: 12px;
       color: var(--muted);
+    }
+
+    .add-product-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .add-product-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .add-product-form .full {
+      grid-column: span 2;
+    }
+
+    .form-note {
+      grid-column: span 2;
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
     }
 
     .category {
@@ -232,13 +258,22 @@
       max-width: 520px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 10px;
     }
 
     @media (max-width: 380px) {
       .grid {
         grid-template-columns: repeat(3, 1fr);
+      }
+
+      .add-product-form {
+        grid-template-columns: 1fr;
+      }
+
+      .add-product-form .full,
+      .form-note {
+        grid-column: span 1;
       }
     }
   </style>
@@ -271,6 +306,36 @@
       </div>
     </header>
 
+    <section class="add-product-box">
+      <div class="section-title">
+        <h2>Nuovo prodotto</h2>
+        <span class="hint">salvato sul telefono</span>
+      </div>
+
+      <form id="addProductForm" class="add-product-form">
+        <input id="newProductName" class="full" type="text" placeholder="Nome prodotto, es. Burro" required />
+
+        <input id="newProductImage" type="text" placeholder="File immagine, es. burro.png" required />
+
+        <select id="newProductCategory" required>
+          <option value="">Categoria</option>
+          <option value="Frutta">Frutta</option>
+          <option value="Verdura">Verdura</option>
+          <option value="Pane e pasta">Pane e pasta</option>
+          <option value="Frigo">Frigo</option>
+          <option value="Bevande">Bevande</option>
+          <option value="Dispensa">Dispensa</option>
+          <option value="Casa e igiene">Casa e igiene</option>
+        </select>
+
+        <p class="form-note">
+          Prima carica l’immagine nella cartella img di GitHub. Qui scrivi solo il nome del file, per esempio burro.png.
+        </p>
+
+        <button class="full" type="submit">Aggiungi prodotto</button>
+      </form>
+    </section>
+
     <section>
       <div class="section-title">
         <h2>Da comprare</h2>
@@ -301,7 +366,6 @@
   <div class="bottom-bar">
     <div class="bottom-bar-inner">
       <button class="secondary" id="resetBought">Fine spesa</button>
-      <button class="danger" id="resetAll">Reset totale</button>
     </div>
   </div>
 
@@ -357,15 +421,93 @@
     const searchInput = document.getElementById("searchInput");
     const clearSearch = document.getElementById("clearSearch");
     const resetBought = document.getElementById("resetBought");
-    const resetAll = document.getElementById("resetAll");
+
+    const addProductForm = document.getElementById("addProductForm");
+    const newProductName = document.getElementById("newProductName");
+    const newProductImage = document.getElementById("newProductImage");
+    const newProductCategory = document.getElementById("newProductCategory");
 
     function loadProducts() {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultProducts;
+
+      if (!saved) {
+        return defaultProducts;
+      }
+
+      try {
+        const savedProducts = JSON.parse(saved);
+
+        const mergedDefaultProducts = defaultProducts.map(defaultProduct => {
+          const savedVersion = savedProducts.find(product => product.id === defaultProduct.id);
+
+          if (!savedVersion) {
+            return defaultProduct;
+          }
+
+          return {
+            ...defaultProduct,
+            state: savedVersion.state || "catalog"
+          };
+        });
+
+        const customProducts = savedProducts.filter(savedProduct => {
+          const existsInDefault = defaultProducts.some(defaultProduct => defaultProduct.id === savedProduct.id);
+          return !existsInDefault;
+        });
+
+        return [...mergedDefaultProducts, ...customProducts];
+      } catch (error) {
+        return defaultProducts;
+      }
     }
 
     function saveProducts() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+    }
+
+    function createProductId(name) {
+      const cleanName = name
+        .toLowerCase()
+        .trim()
+        .replaceAll(" ", "-")
+        .replace(/[^\w-]/g, "");
+
+      return cleanName + "-" + Date.now();
+    }
+
+    function cleanImageFileName(fileName) {
+      return fileName
+        .trim()
+        .replaceAll(" ", "-")
+        .replace(/^img\//, "");
+    }
+
+    function addNewProduct(event) {
+      event.preventDefault();
+
+      const name = newProductName.value.trim();
+      const imageFileName = cleanImageFileName(newProductImage.value);
+      const category = newProductCategory.value;
+
+      if (!name || !imageFileName || !category) {
+        alert("Compila nome prodotto, file immagine e categoria.");
+        return;
+      }
+
+      const newProduct = {
+        id: createProductId(name),
+        name: name,
+        image: "img/" + imageFileName,
+        category: category,
+        state: "catalog",
+        custom: true
+      };
+
+      products.push(newProduct);
+      saveProducts();
+      render();
+
+      addProductForm.reset();
     }
 
     function nextState(currentState) {
@@ -486,6 +628,8 @@
       renderStats();
     }
 
+    addProductForm.addEventListener("submit", addNewProduct);
+
     searchInput.addEventListener("input", render);
 
     clearSearch.addEventListener("click", () => {
@@ -499,16 +643,6 @@
         state: "catalog"
       }));
 
-      saveProducts();
-      render();
-    });
-
-    resetAll.addEventListener("click", () => {
-      const confirmReset = confirm("Vuoi davvero azzerare tutta la lista?");
-
-      if (!confirmReset) return;
-
-      products = defaultProducts;
       saveProducts();
       render();
     });
