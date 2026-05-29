@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Lista Spesa Visuale</title>
+
   <style>
     :root {
       --bg: #f6f7f9;
@@ -193,6 +194,13 @@
       line-height: 1;
     }
 
+    .product-img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      display: block;
+    }
+
     .name {
       font-size: 12px;
       text-align: center;
@@ -235,6 +243,7 @@
     }
   </style>
 </head>
+
 <body>
   <main class="app">
     <header>
@@ -332,6 +341,7 @@
 
       { id: "sapone", name: "Sapone", emoji: "🧼", category: "Casa e igiene", state: "catalog" },
       { id: "carta", name: "Carta", emoji: "🧻", category: "Casa e igiene", state: "catalog" },
+      { id: "scottex", name: "Scottex", image: "img/scottex.png", category: "Casa e igiene", state: "catalog" },
       { id: "detersivo", name: "Detersivo", emoji: "🧴", category: "Casa e igiene", state: "catalog" },
       { id: "spugne", name: "Spugne", emoji: "🧽", category: "Casa e igiene", state: "catalog" }
     ];
@@ -368,23 +378,36 @@
         if (product.id !== id) return product;
         return { ...product, state: nextState(product.state) };
       });
+
       saveProducts();
       render();
     }
 
     function createItem(product) {
       const button = document.createElement("div");
+
       button.className = `item ${product.state === "to-buy" ? "to-buy" : ""} ${product.state === "bought" ? "bought" : ""}`;
+
       button.setAttribute("role", "button");
       button.setAttribute("tabindex", "0");
+
+      const visual = product.image
+        ? `<img class="product-img" src="${product.image}" alt="${product.name}">`
+        : `<div class="emoji">${product.emoji}</div>`;
+
       button.innerHTML = `
-        <div class="emoji">${product.emoji}</div>
+        ${visual}
         <div class="name">${product.name}</div>
       `;
+
       button.addEventListener("click", () => updateProductState(product.id));
+
       button.addEventListener("keydown", event => {
-        if (event.key === "Enter" || event.key === " ") updateProductState(product.id);
+        if (event.key === "Enter" || event.key === " ") {
+          updateProductState(product.id);
+        }
       });
+
       return button;
     }
 
@@ -398,6 +421,7 @@
 
     function renderCatalog(items) {
       catalog.innerHTML = "";
+
       const grouped = groupByCategory(items);
 
       Object.entries(grouped).forEach(([category, categoryItems]) => {
@@ -409,7 +433,10 @@
 
         const grid = document.createElement("div");
         grid.className = "grid";
-        categoryItems.forEach(item => grid.appendChild(createItem(item)));
+
+        categoryItems.forEach(item => {
+          grid.appendChild(createItem(item));
+        });
 
         wrapper.appendChild(title);
         wrapper.appendChild(grid);
@@ -419,21 +446,33 @@
 
     function renderList(container, items, emptyElement) {
       container.innerHTML = "";
-      items.forEach(item => container.appendChild(createItem(item)));
+
+      items.forEach(item => {
+        container.appendChild(createItem(item));
+      });
+
       emptyElement.style.display = items.length ? "none" : "block";
     }
 
     function renderStats() {
-      document.getElementById("countCatalog").textContent = products.filter(p => p.state === "catalog").length;
-      document.getElementById("countToBuy").textContent = products.filter(p => p.state === "to-buy").length;
-      document.getElementById("countBought").textContent = products.filter(p => p.state === "bought").length;
+      document.getElementById("countCatalog").textContent =
+        products.filter(product => product.state === "catalog").length;
+
+      document.getElementById("countToBuy").textContent =
+        products.filter(product => product.state === "to-buy").length;
+
+      document.getElementById("countBought").textContent =
+        products.filter(product => product.state === "bought").length;
     }
 
     function render() {
       const query = searchInput.value.trim().toLowerCase();
 
       const filteredCatalog = products.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(query) || product.category.toLowerCase().includes(query);
+        const matchesSearch =
+          product.name.toLowerCase().includes(query) ||
+          product.category.toLowerCase().includes(query);
+
         return product.state === "catalog" && matchesSearch;
       });
 
@@ -454,14 +493,20 @@
     });
 
     resetBought.addEventListener("click", () => {
-      products = products.map(product => ({ ...product, state: "catalog" }));
+      products = products.map(product => ({
+        ...product,
+        state: "catalog"
+      }));
+
       saveProducts();
       render();
     });
 
     resetAll.addEventListener("click", () => {
       const confirmReset = confirm("Vuoi davvero azzerare tutta la lista?");
+
       if (!confirmReset) return;
+
       products = defaultProducts;
       saveProducts();
       render();
