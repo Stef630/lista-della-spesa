@@ -89,20 +89,14 @@
       margin-bottom: 14px;
     }
 
-    input,
-    select {
-      width: 100%;
+    input {
+      flex: 1;
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 12px 14px;
       font-size: 15px;
       outline: none;
       background: var(--card);
-      color: var(--text);
-    }
-
-    .toolbar input {
-      flex: 1;
     }
 
     button {
@@ -118,6 +112,7 @@
 
     button.secondary {
       background: #111827;
+      width: 100%;
     }
 
     section {
@@ -139,32 +134,6 @@
     .hint {
       font-size: 12px;
       color: var(--muted);
-    }
-
-    .add-product-box {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      padding: 14px;
-      box-shadow: var(--shadow);
-    }
-
-    .add-product-form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .add-product-form .full {
-      grid-column: span 2;
-    }
-
-    .form-note {
-      grid-column: span 2;
-      margin: 2px 0 0;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.4;
     }
 
     .category {
@@ -266,15 +235,6 @@
       .grid {
         grid-template-columns: repeat(3, 1fr);
       }
-
-      .add-product-form {
-        grid-template-columns: 1fr;
-      }
-
-      .add-product-form .full,
-      .form-note {
-        grid-column: span 1;
-      }
     }
   </style>
 </head>
@@ -302,39 +262,9 @@
 
       <div class="toolbar">
         <input id="searchInput" type="search" placeholder="Cerca prodotto..." />
-        <button id="clearSearch">Pulisci</button>
+        <button id="searchButton">Cerca</button>
       </div>
     </header>
-
-    <section class="add-product-box">
-      <div class="section-title">
-        <h2>Nuovo prodotto</h2>
-        <span class="hint">salvato sul telefono</span>
-      </div>
-
-      <form id="addProductForm" class="add-product-form">
-        <input id="newProductName" class="full" type="text" placeholder="Nome prodotto, es. Burro" required />
-
-        <input id="newProductImage" type="text" placeholder="File immagine, es. burro.png" required />
-
-        <select id="newProductCategory" required>
-          <option value="">Categoria</option>
-          <option value="Frutta">Frutta</option>
-          <option value="Verdura">Verdura</option>
-          <option value="Pane e pasta">Pane e pasta</option>
-          <option value="Frigo">Frigo</option>
-          <option value="Bevande">Bevande</option>
-          <option value="Dispensa">Dispensa</option>
-          <option value="Casa e igiene">Casa e igiene</option>
-        </select>
-
-        <p class="form-note">
-          Prima carica l’immagine nella cartella img di GitHub. Qui scrivi solo il nome del file, per esempio burro.png.
-        </p>
-
-        <button class="full" type="submit">Aggiungi prodotto</button>
-      </form>
-    </section>
 
     <section>
       <div class="section-title">
@@ -419,13 +349,8 @@
     const toBuyEmpty = document.getElementById("toBuyEmpty");
     const boughtEmpty = document.getElementById("boughtEmpty");
     const searchInput = document.getElementById("searchInput");
-    const clearSearch = document.getElementById("clearSearch");
+    const searchButton = document.getElementById("searchButton");
     const resetBought = document.getElementById("resetBought");
-
-    const addProductForm = document.getElementById("addProductForm");
-    const newProductName = document.getElementById("newProductName");
-    const newProductImage = document.getElementById("newProductImage");
-    const newProductCategory = document.getElementById("newProductCategory");
 
     function loadProducts() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -463,51 +388,6 @@
 
     function saveProducts() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
-    }
-
-    function createProductId(name) {
-      const cleanName = name
-        .toLowerCase()
-        .trim()
-        .replaceAll(" ", "-")
-        .replace(/[^\w-]/g, "");
-
-      return cleanName + "-" + Date.now();
-    }
-
-    function cleanImageFileName(fileName) {
-      return fileName
-        .trim()
-        .replaceAll(" ", "-")
-        .replace(/^img\//, "");
-    }
-
-    function addNewProduct(event) {
-      event.preventDefault();
-
-      const name = newProductName.value.trim();
-      const imageFileName = cleanImageFileName(newProductImage.value);
-      const category = newProductCategory.value;
-
-      if (!name || !imageFileName || !category) {
-        alert("Compila nome prodotto, file immagine e categoria.");
-        return;
-      }
-
-      const newProduct = {
-        id: createProductId(name),
-        name: name,
-        image: "img/" + imageFileName,
-        category: category,
-        state: "catalog",
-        custom: true
-      };
-
-      products.push(newProduct);
-      saveProducts();
-      render();
-
-      addProductForm.reset();
     }
 
     function nextState(currentState) {
@@ -628,12 +508,9 @@
       renderStats();
     }
 
-    addProductForm.addEventListener("submit", addNewProduct);
-
     searchInput.addEventListener("input", render);
 
-    clearSearch.addEventListener("click", () => {
-      searchInput.value = "";
+    searchButton.addEventListener("click", () => {
       render();
     });
 
