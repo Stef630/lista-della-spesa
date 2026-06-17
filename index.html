@@ -1,16 +1,63 @@
-Lista Spesa
-Tocca un prodotto per spostarlo tra catalogo, da comprare e comprato.
-33 Catalogo
-0 Da comprare
-0 Comprati
-Da comprare
-tocca quando lo compri
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lista Spesa Visuale</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-Nessun prodotto da comprare.
-Comprati
-tocca per rimettere nel catalogo
+<body>
+  <main class="app">
+    <header>
+      <h1>Lista Spesa</h1>
+      <p class="subtitle">Tocca un prodotto per spostarlo tra catalogo, da comprare e comprato.</p>
 
-Nessun prodotto comprato.
-Catalogo
-Fine spesa
+      <div class="stats">
+        <div class="stat">
+          <strong id="countCatalog">33</strong>
+          <span>Catalogo</span>
+        </div>
+        <div class="stat">
+          <strong id="countToBuy">0</strong>
+          <span>Da comprare</span>
+        </div>
+        <div class="stat">
+          <strong id="countBought">0</strong>
+          <span>Comprati</span>
+        </div>
+      </div>
+    </header>
 
+    <section>
+      <div class="section-title">
+        <h2>Da comprare</h2>
+        <span class="hint">tocca quando lo compri</span>
+      </div>
+      <div id="toBuyList" class="grid"></div>
+      <div id="toBuyEmpty" class="empty">Nessun prodotto da comprare.</div>
+    </section>
+
+    <textarea id="extraNotes" class="extra-notes" placeholder="Scrivi qui altri prodotti..."></textarea>
+
+    <section>
+      <div class="section-title">
+        <h2>Comprati</h2>
+        <span class="hint">tocca per rimettere nel catalogo</span>
+      </div>
+      <div id="boughtList" class="grid"></div>
+      <div id="boughtEmpty" class="empty">Nessun prodotto comprato.</div>
+    </section>
+
+    <section>
+      <div class="section-title">
+        <h2>Catalogo</h2>
+        <button id="resetBought">Fine spesa</button>
+      </div>
+      <div id="catalog"></div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
