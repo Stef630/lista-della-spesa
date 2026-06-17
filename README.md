@@ -1,9 +1,10 @@
-# App Lista Spesa
+# Lista Spesa Visuale
 
-Questa è una semplice applicazione personale per gestire la lista della spesa.
+App mobile per gestire una lista della spesa visuale.
 
-## Funzioni principali
+## Struttura
 
-- Visualizzazione prodotti
-- Categorie alimentari
-- Uso da iPhone e Mac
+- `index.html`: struttura della pagina
+- `style.css`: stili dell'app
+- `script.js`: logica dell'app e gestione localStorage
+- `img/`: immagini dei prodotti
