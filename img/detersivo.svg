@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Detersivo</title>
+  <desc id="desc">Icona flat di un flacone di detersivo.</desc>
+  <path d="M39 8h22v13H39V8z" fill="#0ea5e9"/>
+  <path d="M35 20h30l8 13v48c0 7-5 12-12 12H35c-7 0-12-5-12-12V33l12-13z" fill="#38bdf8"/>
+  <path d="M23 51h50v24H23V51z" fill="#facc15"/>
+  <path d="M35 20c-7 10-10 22-10 36v25" fill="none" stroke="#bae6fd" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="49" cy="63" r="9" fill="#f8fafc"/>
+  <path d="M40 33h20" fill="none" stroke="#e0f2fe" stroke-width="5" stroke-linecap="round"/>
+</svg>

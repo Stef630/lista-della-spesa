@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">Pere</title>
+  <desc id="desc">Icona flat di due pere verdi con foglie.</desc>
+  <path d="M54 13c6-6 13-8 22-6-2 9-8 14-18 15l-8 1 4-10z" fill="#2f855a"/>
+  <path d="M48 28c2-8 1-14-3-20" fill="none" stroke="#7c4a20" stroke-width="5" stroke-linecap="round"/>
+  <path d="M48 23c10 0 17 9 16 21 10 6 17 16 17 29 0 14-13 21-33 21s-33-7-33-21c0-13 7-23 17-29-1-12 6-21 16-21z" fill="#a3d635"/>
+  <path d="M35 28c-8 4-11 12-10 22-8 6-12 14-12 24 0 12 10 19 27 20-9-5-14-12-14-22 0-12 5-22 14-28-1-8 1-13 7-17-4-1-8-1-12 1z" fill="#84cc16" opacity="0.9"/>
+  <path d="M39 34c-4 5-5 11-3 17" fill="none" stroke="#d9f99d" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+  <circle cx="58" cy="70" r="3" fill="#65a30d" opacity="0.7"/>
+</svg>
