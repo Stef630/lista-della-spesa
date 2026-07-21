@@ -54,6 +54,8 @@ const toBuyList = document.getElementById("toBuyList");
 const boughtList = document.getElementById("boughtList");
 const toBuyEmpty = document.getElementById("toBuyEmpty");
 const boughtEmpty = document.getElementById("boughtEmpty");
+const searchInput = document.getElementById("searchInput");
+const clearSearch = document.getElementById("clearSearch");
 const resetBought = document.getElementById("resetBought");
 const extraNotes = document.getElementById("extraNotes");
 
@@ -192,7 +194,15 @@ function renderStats() {
 }
 
 function render() {
-  const catalogProducts = products.filter(product => product.state === "catalog");
+  const query = searchInput.value.trim().toLowerCase();
+
+  const catalogProducts = products.filter(product => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(query) ||
+      product.category.toLowerCase().includes(query);
+
+    return product.state === "catalog" && matchesSearch;
+  });
   const toBuy = products.filter(product => product.state === "to-buy");
   const bought = products.filter(product => product.state === "bought");
 
@@ -207,10 +217,17 @@ if (extraNotes) {
   extraNotes.addEventListener("input", saveExtraNotes);
 }
 
+searchInput.addEventListener("input", render);
+
+clearSearch.addEventListener("click", () => {
+  searchInput.value = "";
+  render();
+});
+
 resetBought.addEventListener("click", () => {
   products = products.map(product => ({
     ...product,
-    state: product.state === "bought" ? "catalog" : product.state
+    state: "catalog"
   }));
 
   saveProducts();
