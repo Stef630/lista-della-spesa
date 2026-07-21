@@ -1,4 +1,4 @@
-# Lista Spesa Visuale
+# Lista della spesa
 
 App mobile per gestire una lista della spesa visuale.
 
