@@ -75,6 +75,22 @@ h1 {
   color: var(--muted);
 }
 
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+input {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 15px;
+  outline: none;
+  background: var(--card);
+}
+
 .extra-notes {
   display: block;
   width: 100%;
