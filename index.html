@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lista Spesa Visuale</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Lista della spesa</title>
+  <link rel="stylesheet" href="style.css?v=20260617" />
 </head>
 
 <body>
   <main class="app">
     <header>
-      <h1>Lista Spesa</h1>
+      <h1>Lista della spesa</h1>
       <p class="subtitle">Tocca un prodotto per spostarlo tra catalogo, da comprare e comprato.</p>
 
       <div class="stats">
         <div class="stat">
-          <strong id="countCatalog">33</strong>
+          <strong id="countCatalog">37</strong>
           <span>Catalogo</span>
         </div>
         <div class="stat">
@@ -26,6 +26,11 @@
           <strong id="countBought">0</strong>
           <span>Comprati</span>
         </div>
+      </div>
+
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="Cerca prodotto...">
+        <button id="clearSearch">Pulisci</button>
       </div>
     </header>
 
@@ -38,7 +43,12 @@
       <div id="toBuyEmpty" class="empty">Nessun prodotto da comprare.</div>
     </section>
 
-    <textarea id="extraNotes" class="extra-notes" placeholder="Scrivi qui altri prodotti..."></textarea>
+    <section>
+      <div class="section-title">
+        <h2>Prodotti extra</h2>
+      </div>
+      <textarea id="extraNotes" class="extra-notes" placeholder="Scrivi qui altri prodotti..."></textarea>
+    </section>
 
     <section>
       <div class="section-title">
@@ -58,6 +68,6 @@
     </section>
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=20260617"></script>
 </body>
 </html>
