@@ -154,6 +154,8 @@ let pendingSync = false;
 let notesSyncTimer = null;
 let realtimeChannel = null;
 let lastLocalSyncTimestamp = null;
+let lastKnownRemoteTimestamp = null;
+let remotePollingTimer = null;
 
 assertRequiredElements();
 
@@ -287,6 +289,7 @@ function getRemotePayload() {
 }
 
 function applyRemoteState(row) {
+  lastKnownRemoteTimestamp = row.updated_at || lastKnownRemoteTimestamp;
   products = normalizeProducts(row.products);
   extraNotes.value = typeof row.extra_notes === "string" ? row.extra_notes : "";
   saveProducts();
@@ -340,6 +343,40 @@ async function subscribeToRealtimeState() {
     });
 }
 
+function stopRemotePolling() {
+  window.clearInterval(remotePollingTimer);
+  remotePollingTimer = null;
+}
+
+function startRemotePolling() {
+  stopRemotePolling();
+
+  remotePollingTimer = window.setInterval(async () => {
+    if (!remoteReady || !currentUser || !stateRowId || !supabaseClient || syncInProgress) return;
+
+    const { data, error } = await supabaseClient
+      .from("shopping_app_state")
+      .select("products, extra_notes, updated_at")
+      .eq("id", stateRowId)
+      .eq("user_id", currentUser.id)
+      .single();
+
+    if (error || !data) {
+      setSyncStatus("Sincronizzazione automatica non riuscita. Riprovo tra poco.", true);
+      return;
+    }
+
+    if (!data.updated_at || data.updated_at === lastKnownRemoteTimestamp) return;
+
+    if (data.updated_at === lastLocalSyncTimestamp) {
+      lastKnownRemoteTimestamp = data.updated_at;
+      return;
+    }
+
+    applyRemoteState(data);
+  }, 4000);
+}
+
 async function loadOrCreateRemoteState() {
   remoteReady = false;
   stateRowId = null;
@@ -349,7 +386,7 @@ async function loadOrCreateRemoteState() {
   const localExtraNotes = loadExtraNotes();
   const { data, error } = await supabaseClient
     .from("shopping_app_state")
-    .select("id, products, extra_notes")
+    .select("id, products, extra_notes, updated_at")
     .eq("user_id", currentUser.id)
     .limit(1)
     .maybeSingle();
@@ -360,6 +397,7 @@ async function loadOrCreateRemoteState() {
 
   if (data) {
     stateRowId = data.id;
+    lastKnownRemoteTimestamp = data.updated_at || null;
     products = normalizeProducts(data.products);
     extraNotes.value = typeof data.extra_notes === "string" ? data.extra_notes : "";
     saveProducts();
@@ -367,6 +405,7 @@ async function loadOrCreateRemoteState() {
     remoteReady = true;
     render();
     await subscribeToRealtimeState();
+    startRemotePolling();
     return;
   }
 
@@ -389,6 +428,7 @@ async function loadOrCreateRemoteState() {
   }
 
   stateRowId = inserted.id;
+  lastKnownRemoteTimestamp = payload.updated_at;
   products = normalizeProducts(localProducts);
   extraNotes.value = localExtraNotes;
   saveProducts();
@@ -396,6 +436,7 @@ async function loadOrCreateRemoteState() {
   remoteReady = true;
   render();
   await subscribeToRealtimeState();
+  startRemotePolling();
 }
 
 async function syncRemoteState() {
@@ -423,6 +464,7 @@ async function syncRemoteState() {
     return;
   }
 
+  lastKnownRemoteTimestamp = lastLocalSyncTimestamp;
   setSyncStatus("Salvato.");
 
   if (pendingSync) {
@@ -481,8 +523,11 @@ async function setupAuth() {
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT") {
       removeRealtimeSubscription();
+      stopRemotePolling();
       currentUser = null;
       stateRowId = null;
+      lastKnownRemoteTimestamp = null;
+      lastLocalSyncTimestamp = null;
       remoteReady = false;
       showLoggedOut();
       render();
