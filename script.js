@@ -64,6 +64,7 @@ const defaultProducts = [
   { id: "mozzarella", name: "Mozzarella", image: "img/mozzarella.png", category: "Frigo", state: "catalog" },
   { id: "ricotta", name: "Ricotta", image: "img/ricotta.png", category: "Frigo", state: "catalog" },
   { id: "parmigiano", name: "Parmigiano", image: "img/parmigiano.png", category: "Frigo", state: "catalog" },
+  { id: "formaggio-grattugiato", name: "Formaggio grattugiato", image: "img/formaggio-grattugiato.png", category: "Frigo", state: "catalog" },
   { id: "burro", name: "Burro", image: "img/burro.png", category: "Frigo", state: "catalog" },
   { id: "prosciutto", name: "Prosciutto", image: "img/prosciutto.png", category: "Frigo", state: "catalog" },
   { id: "bresaola", name: "Bresaola", image: "img/bresaola.png", category: "Frigo", state: "catalog" },
