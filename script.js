@@ -155,6 +155,7 @@ let notesSyncTimer = null;
 let realtimeChannel = null;
 let lastLocalSyncTimestamp = null;
 let lastKnownRemoteTimestamp = null;
+let lastKnownRemoteSignature = null;
 let remotePollingTimer = null;
 
 assertRequiredElements();
@@ -288,8 +289,19 @@ function getRemotePayload() {
   };
 }
 
+function createStateSignature(row) {
+  return JSON.stringify({
+    products: normalizeProducts(row.products).map(product => ({
+      id: product.id,
+      state: product.state
+    })),
+    extra_notes: typeof row.extra_notes === "string" ? row.extra_notes : ""
+  });
+}
+
 function applyRemoteState(row) {
   lastKnownRemoteTimestamp = row.updated_at || lastKnownRemoteTimestamp;
+  lastKnownRemoteSignature = createStateSignature(row);
   products = normalizeProducts(row.products);
   extraNotes.value = typeof row.extra_notes === "string" ? row.extra_notes : "";
   saveProducts();
@@ -324,7 +336,9 @@ async function subscribeToRealtimeState() {
       payload => {
         if (!payload.new) return;
 
-        if (payload.new.updated_at && payload.new.updated_at === lastKnownRemoteTimestamp) {
+        const nextSignature = createStateSignature(payload.new);
+
+        if (nextSignature === lastKnownRemoteSignature) {
           setSyncStatus("Salvato.");
           return;
         }
@@ -365,10 +379,10 @@ function startRemotePolling() {
       return;
     }
 
-    if (!data.updated_at || data.updated_at === lastKnownRemoteTimestamp) return;
+    const nextSignature = createStateSignature(data);
 
-    if (data.updated_at === lastLocalSyncTimestamp) {
-      lastKnownRemoteTimestamp = data.updated_at;
+    if (nextSignature === lastKnownRemoteSignature) {
+      lastKnownRemoteTimestamp = data.updated_at || lastKnownRemoteTimestamp;
       return;
     }
 
@@ -380,6 +394,7 @@ async function loadOrCreateRemoteState() {
   remoteReady = false;
   stateRowId = null;
   lastKnownRemoteTimestamp = null;
+  lastKnownRemoteSignature = null;
   setSyncStatus("Caricamento lista condivisa...");
 
   const localProducts = products;
@@ -433,10 +448,12 @@ async function loadOrCreateRemoteState() {
     products = normalizeProducts(seededList.products);
     extraNotes.value = typeof seededList.extra_notes === "string" ? seededList.extra_notes : "";
     lastKnownRemoteTimestamp = seededList.updated_at || null;
+    lastKnownRemoteSignature = createStateSignature(seededList);
   } else {
     products = normalizeProducts(sharedList.products);
     extraNotes.value = typeof sharedList.extra_notes === "string" ? sharedList.extra_notes : "";
     lastKnownRemoteTimestamp = sharedList.updated_at || null;
+    lastKnownRemoteSignature = createStateSignature(sharedList);
   }
 
   saveProducts();
@@ -464,7 +481,7 @@ async function syncRemoteState() {
     .from("shopping_lists")
     .update(getRemotePayload())
     .eq("id", stateRowId)
-    .select("updated_at")
+    .select("products, extra_notes, updated_at")
     .single();
 
   syncInProgress = false;
@@ -475,6 +492,7 @@ async function syncRemoteState() {
   }
 
   lastKnownRemoteTimestamp = data?.updated_at || lastLocalSyncTimestamp;
+  lastKnownRemoteSignature = data ? createStateSignature(data) : lastKnownRemoteSignature;
   setSyncStatus("Salvato.");
 
   if (pendingSync) {
@@ -538,6 +556,7 @@ async function setupAuth() {
       stateRowId = null;
       lastKnownRemoteTimestamp = null;
       lastLocalSyncTimestamp = null;
+      lastKnownRemoteSignature = null;
       remoteReady = false;
       showLoggedOut();
       render();
