@@ -5,13 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lista della spesa</title>
   <link rel="stylesheet" href="style.css?v=20260721" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
-  <main class="app">
+  <main id="authView" class="app auth-view">
+    <section class="login-panel">
+      <h1>Lista della spesa</h1>
+      <p class="subtitle">Accedi per sincronizzare la lista su tutti i tuoi dispositivi.</p>
+
+      <form id="loginForm" class="login-form">
+        <label for="emailInput">Email</label>
+        <input id="emailInput" type="email" autocomplete="email" required>
+
+        <label for="passwordInput">Password</label>
+        <input id="passwordInput" type="password" autocomplete="current-password" required>
+
+        <button id="loginButton" type="submit">Accedi</button>
+      </form>
+
+      <div id="loginError" class="status-message error" role="alert"></div>
+    </section>
+  </main>
+
+  <main id="appView" class="app is-hidden">
     <header>
       <h1>Lista della spesa</h1>
       <p class="subtitle">Tocca un prodotto per spostarlo tra catalogo, da comprare e comprato.</p>
+
+      <div class="account-bar">
+        <span id="userEmail"></span>
+        <button id="logoutButton" type="button">Esci</button>
+      </div>
+
+      <div id="syncStatus" class="status-message" role="status"></div>
 
       <div class="stats">
         <div class="stat">
@@ -68,6 +95,6 @@
     </section>
   </main>
 
-  <script src="script.js?v=20260721"></script>
+  <script src="script.js?v=20260725"></script>
 </body>
 </html>

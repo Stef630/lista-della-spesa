@@ -1,5 +1,8 @@
 const STORAGE_KEY = "listaSpesaVisuale_v1";
 const EXTRA_NOTES_STORAGE_KEY = "listaSpesaExtraNotes_v1";
+const SUPABASE_URL = "https://gcujevbkbsdbngwlcyrz.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_O0yVt9J2Duwxlh_hqlPBFg_FskgM1lc";
+const SYNC_DEBOUNCE_DELAY = 600;
 
 const defaultProducts = [
   { id: "mele", name: "Mele", image: "img/mele.png", category: "Frutta", state: "catalog" },
@@ -122,6 +125,16 @@ const defaultProducts = [
 
 let products = loadProducts();
 
+const authView = document.getElementById("authView");
+const appView = document.getElementById("appView");
+const loginForm = document.getElementById("loginForm");
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const loginButton = document.getElementById("loginButton");
+const loginError = document.getElementById("loginError");
+const syncStatus = document.getElementById("syncStatus");
+const userEmail = document.getElementById("userEmail");
+const logoutButton = document.getElementById("logoutButton");
 const catalog = document.getElementById("catalog");
 const toBuyList = document.getElementById("toBuyList");
 const boughtList = document.getElementById("boughtList");
@@ -131,6 +144,16 @@ const searchInput = document.getElementById("searchInput");
 const clearSearch = document.getElementById("clearSearch");
 const resetBought = document.getElementById("resetBought");
 const extraNotes = document.getElementById("extraNotes");
+
+let supabaseClient = null;
+let currentUser = null;
+let stateRowId = null;
+let remoteReady = false;
+let syncInProgress = false;
+let pendingSync = false;
+let notesSyncTimer = null;
+
+assertRequiredElements();
 
 function loadProducts() {
   const saved = localStorage.getItem(STORAGE_KEY);
@@ -157,6 +180,20 @@ function loadProducts() {
   }));
 }
 
+function normalizeProducts(savedProducts) {
+  if (!Array.isArray(savedProducts)) return defaultProducts;
+
+  const savedById = savedProducts.reduce((items, product) => {
+    items[product.id] = product;
+    return items;
+  }, {});
+
+  return defaultProducts.map(product => ({
+    ...product,
+    state: savedById[product.id]?.state || product.state
+  }));
+}
+
 function saveProducts() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
 }
@@ -168,6 +205,234 @@ function loadExtraNotes() {
 function saveExtraNotes() {
   if (!extraNotes) return;
   localStorage.setItem(EXTRA_NOTES_STORAGE_KEY, extraNotes.value);
+}
+
+function assertRequiredElements() {
+  const requiredElements = {
+    authView,
+    appView,
+    loginForm,
+    emailInput,
+    passwordInput,
+    loginButton,
+    loginError,
+    syncStatus,
+    userEmail,
+    logoutButton,
+    catalog,
+    toBuyList,
+    boughtList,
+    toBuyEmpty,
+    boughtEmpty,
+    searchInput,
+    clearSearch,
+    resetBought,
+    extraNotes
+  };
+
+  Object.entries(requiredElements).forEach(([name, element]) => {
+    if (!element) {
+      throw new Error(`Elemento HTML mancante: ${name}`);
+    }
+  });
+}
+
+function setLoginError(message) {
+  loginError.textContent = message;
+}
+
+function setSyncStatus(message, isError = false) {
+  syncStatus.textContent = message;
+  syncStatus.classList.toggle("error", isError);
+}
+
+function showLoggedOut() {
+  authView.classList.remove("is-hidden");
+  appView.classList.add("is-hidden");
+  userEmail.textContent = "";
+  setSyncStatus("");
+}
+
+function showLoggedIn(user) {
+  authView.classList.add("is-hidden");
+  appView.classList.remove("is-hidden");
+  userEmail.textContent = user.email || "";
+}
+
+function createSupabaseClient() {
+  if (!window.supabase) {
+    setLoginError("Supabase non è disponibile. Controlla la connessione e riprova.");
+    return null;
+  }
+
+  return window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false
+    }
+  });
+}
+
+function getRemotePayload() {
+  return {
+    products,
+    extra_notes: extraNotes.value,
+    updated_at: new Date().toISOString()
+  };
+}
+
+async function loadOrCreateRemoteState() {
+  remoteReady = false;
+  stateRowId = null;
+  setSyncStatus("Sincronizzazione in corso...");
+
+  const localProducts = products;
+  const localExtraNotes = loadExtraNotes();
+  const { data, error } = await supabaseClient
+    .from("shopping_app_state")
+    .select("id, products, extra_notes")
+    .eq("user_id", currentUser.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (data) {
+    stateRowId = data.id;
+    products = normalizeProducts(data.products);
+    extraNotes.value = typeof data.extra_notes === "string" ? data.extra_notes : "";
+    saveProducts();
+    saveExtraNotes();
+    remoteReady = true;
+    render();
+    setSyncStatus("Lista sincronizzata.");
+    return;
+  }
+
+  const payload = {
+    user_id: currentUser.id,
+    products: localProducts,
+    extra_notes: localExtraNotes,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const { data: inserted, error: insertError } = await supabaseClient
+    .from("shopping_app_state")
+    .insert(payload)
+    .select("id")
+    .single();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  stateRowId = inserted.id;
+  products = normalizeProducts(localProducts);
+  extraNotes.value = localExtraNotes;
+  saveProducts();
+  saveExtraNotes();
+  remoteReady = true;
+  render();
+  setSyncStatus("Lista locale importata e sincronizzata.");
+}
+
+async function syncRemoteState() {
+  if (!remoteReady || !currentUser || !stateRowId || !supabaseClient) return;
+
+  if (syncInProgress) {
+    pendingSync = true;
+    return;
+  }
+
+  syncInProgress = true;
+  pendingSync = false;
+  setSyncStatus("Salvataggio...");
+
+  const { error } = await supabaseClient
+    .from("shopping_app_state")
+    .update(getRemotePayload())
+    .eq("id", stateRowId)
+    .eq("user_id", currentUser.id);
+
+  syncInProgress = false;
+
+  if (error) {
+    setSyncStatus("Errore di sincronizzazione. I dati sono salvati su questo dispositivo.", true);
+    return;
+  }
+
+  setSyncStatus("Salvato.");
+
+  if (pendingSync) {
+    syncRemoteState();
+  }
+}
+
+function saveProductsEverywhere() {
+  saveProducts();
+  syncRemoteState();
+}
+
+function saveExtraNotesEverywhere() {
+  saveExtraNotes();
+
+  window.clearTimeout(notesSyncTimer);
+  notesSyncTimer = window.setTimeout(() => {
+    syncRemoteState();
+  }, SYNC_DEBOUNCE_DELAY);
+}
+
+async function handleSignedIn(session) {
+  currentUser = session.user;
+  showLoggedIn(currentUser);
+
+  try {
+    await loadOrCreateRemoteState();
+  } catch (error) {
+    remoteReady = false;
+    setSyncStatus(`Errore di sincronizzazione: ${error.message}`, true);
+  }
+}
+
+async function setupAuth() {
+  supabaseClient = createSupabaseClient();
+
+  if (!supabaseClient) {
+    showLoggedOut();
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    setLoginError(`Errore sessione: ${error.message}`);
+    showLoggedOut();
+    return;
+  }
+
+  if (data.session) {
+    await handleSignedIn(data.session);
+  } else {
+    showLoggedOut();
+  }
+
+  supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") {
+      currentUser = null;
+      stateRowId = null;
+      remoteReady = false;
+      showLoggedOut();
+      render();
+    }
+
+    if (event === "TOKEN_REFRESHED" && session) {
+      currentUser = session.user;
+    }
+  });
 }
 
 function nextState(currentState) {
@@ -182,7 +447,7 @@ function updateProductState(id) {
     return { ...product, state: nextState(product.state) };
   });
 
-  saveProducts();
+  saveProductsEverywhere();
   render();
 }
 
@@ -287,8 +552,50 @@ function render() {
 
 if (extraNotes) {
   extraNotes.value = loadExtraNotes();
-  extraNotes.addEventListener("input", saveExtraNotes);
+  extraNotes.addEventListener("input", saveExtraNotesEverywhere);
 }
+
+loginForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  setLoginError("");
+
+  if (!supabaseClient) {
+    setLoginError("Supabase non è disponibile. Controlla la connessione e riprova.");
+    return;
+  }
+
+  loginButton.disabled = true;
+  loginButton.textContent = "Accesso...";
+
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  loginButton.disabled = false;
+  loginButton.textContent = "Accedi";
+
+  if (error) {
+    setLoginError(`Accesso non riuscito: ${error.message}`);
+    return;
+  }
+
+  if (!data.session) {
+    setLoginError("Accesso non riuscito: sessione non disponibile.");
+    return;
+  }
+
+  passwordInput.value = "";
+  await handleSignedIn(data.session);
+});
+
+logoutButton.addEventListener("click", async () => {
+  setSyncStatus("Uscita in corso...");
+  await supabaseClient.auth.signOut();
+});
 
 searchInput.addEventListener("input", render);
 
@@ -303,8 +610,9 @@ resetBought.addEventListener("click", () => {
     state: "catalog"
   }));
 
-  saveProducts();
+  saveProductsEverywhere();
   render();
 });
 
 render();
+setupAuth();
