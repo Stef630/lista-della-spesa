@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
-  <title id="title">Caffe</title>
-  <desc id="desc">Icona flat di una tazzina di caffe.</desc>
-  <path d="M24 42h46v22c0 12-9 21-23 21S24 76 24 64V42z" fill="#f8fafc"/>
-  <path d="M70 47h5c7 0 11 5 10 12-1 8-7 12-16 11v-8c5 1 8-1 9-5 0-3-2-5-6-5h-2v-5z" fill="#e5e7eb"/>
-  <path d="M29 48h36v13c0 9-7 15-18 15s-18-6-18-15V48z" fill="#7c2d12"/>
-  <ellipse cx="47" cy="42" rx="23" ry="7" fill="#92400e"/>
-  <path d="M37 27c-4 5 4 8 0 13M49 24c-4 5 4 8 0 13M61 27c-4 5 4 8 0 13" fill="none" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" opacity="0.75"/>
-</svg>

@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
-  <title id="title">Insalata</title>
-  <desc id="desc">Icona flat di un cespo di insalata verde.</desc>
-  <path d="M19 50c-7-15 4-28 18-20 4-17 25-17 29 0 14-8 25 5 18 20 10 5 9 20-3 26-14 7-51 7-66 0-11-6-12-21 4-26z" fill="#84cc16"/>
-  <path d="M38 30c-7 5-11 13-11 25 0 11 5 22 13 30-14-2-27-8-31-18-3-8 1-15 10-18-5-12 4-23 19-19z" fill="#65a30d" opacity="0.85"/>
-  <path d="M49 25c-5 13-4 31 3 58" fill="none" stroke="#d9f99d" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
-  <path d="M31 45c11 5 18 13 23 24M66 43c-9 7-15 16-17 28" fill="none" stroke="#4d7c0f" stroke-width="4" stroke-linecap="round" opacity="0.55"/>
-</svg>

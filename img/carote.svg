@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
-  <title id="title">Carote</title>
-  <desc id="desc">Icona flat di carote arancioni con foglie verdi.</desc>
-  <path d="M36 13c5 6 7 14 6 24M51 12c-5 7-7 15-5 25M43 15c1 8 1 15 0 22" fill="none" stroke="#38a169" stroke-width="6" stroke-linecap="round"/>
-  <path d="M31 33c16-4 31 2 36 16-7 17-19 30-37 39-7-20-7-39 1-55z" fill="#f97316"/>
-  <path d="M31 34c4-1 8-2 12-1-9 16-10 34-4 50-3 2-6 4-9 5-7-20-7-38 1-54z" fill="#ea580c" opacity="0.9"/>
-  <path d="M40 48l15-3M37 61l13-2M40 73l10-3" fill="none" stroke="#fed7aa" stroke-width="4" stroke-linecap="round" opacity="0.75"/>
-</svg>
