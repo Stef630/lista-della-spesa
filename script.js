@@ -312,19 +312,19 @@ async function subscribeToRealtimeState() {
   if (!supabaseClient || !stateRowId) return;
 
   realtimeChannel = supabaseClient
-    .channel(`shopping-app-state:${stateRowId}`)
+    .channel(`shopping-list:${stateRowId}`)
     .on(
       "postgres_changes",
       {
         event: "UPDATE",
         schema: "public",
-        table: "shopping_app_state",
+        table: "shopping_lists",
         filter: `id=eq.${stateRowId}`
       },
       payload => {
         if (!payload.new) return;
 
-        if (payload.new.updated_at && payload.new.updated_at === lastLocalSyncTimestamp) {
+        if (payload.new.updated_at && payload.new.updated_at === lastKnownRemoteTimestamp) {
           setSyncStatus("Salvato.");
           return;
         }
@@ -355,10 +355,9 @@ function startRemotePolling() {
     if (!remoteReady || !currentUser || !stateRowId || !supabaseClient || syncInProgress) return;
 
     const { data, error } = await supabaseClient
-      .from("shopping_app_state")
+      .from("shopping_lists")
       .select("products, extra_notes, updated_at")
       .eq("id", stateRowId)
-      .eq("user_id", currentUser.id)
       .single();
 
     if (error || !data) {
@@ -380,63 +379,73 @@ function startRemotePolling() {
 async function loadOrCreateRemoteState() {
   remoteReady = false;
   stateRowId = null;
-  setSyncStatus("Sincronizzazione in corso...");
+  lastKnownRemoteTimestamp = null;
+  setSyncStatus("Caricamento lista condivisa...");
 
   const localProducts = products;
   const localExtraNotes = loadExtraNotes();
-  const { data, error } = await supabaseClient
-    .from("shopping_app_state")
-    .select("id, products, extra_notes, updated_at")
+  const { data: membership, error: membershipError } = await supabaseClient
+    .from("shopping_list_members")
+    .select("list_id, role")
     .eq("user_id", currentUser.id)
     .limit(1)
     .maybeSingle();
 
-  if (error) {
-    throw error;
+  if (membershipError) {
+    throw membershipError;
   }
 
-  if (data) {
-    stateRowId = data.id;
-    lastKnownRemoteTimestamp = data.updated_at || null;
-    products = normalizeProducts(data.products);
-    extraNotes.value = typeof data.extra_notes === "string" ? data.extra_notes : "";
-    saveProducts();
-    saveExtraNotes();
-    remoteReady = true;
-    render();
-    await subscribeToRealtimeState();
-    startRemotePolling();
-    return;
+  if (!membership) {
+    throw new Error("Nessuna lista condivisa associata a questo account.");
   }
 
-  const payload = {
-    user_id: currentUser.id,
-    products: localProducts,
-    extra_notes: localExtraNotes,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  };
+  stateRowId = membership.list_id;
 
-  const { data: inserted, error: insertError } = await supabaseClient
-    .from("shopping_app_state")
-    .insert(payload)
-    .select("id")
+  const { data: sharedList, error: listError } = await supabaseClient
+    .from("shopping_lists")
+    .select("id, products, extra_notes, updated_at")
+    .eq("id", stateRowId)
     .single();
 
-  if (insertError) {
-    throw insertError;
+  if (listError) {
+    throw listError;
   }
 
-  stateRowId = inserted.id;
-  lastKnownRemoteTimestamp = payload.updated_at;
-  products = normalizeProducts(localProducts);
-  extraNotes.value = localExtraNotes;
+  const shouldSeedSharedList =
+    Array.isArray(sharedList.products) &&
+    sharedList.products.length === 0;
+
+  if (shouldSeedSharedList) {
+    const { data: seededList, error: seedError } = await supabaseClient
+      .from("shopping_lists")
+      .update({
+        products: localProducts,
+        extra_notes: localExtraNotes
+      })
+      .eq("id", stateRowId)
+      .select("products, extra_notes, updated_at")
+      .single();
+
+    if (seedError) {
+      throw seedError;
+    }
+
+    products = normalizeProducts(seededList.products);
+    extraNotes.value = typeof seededList.extra_notes === "string" ? seededList.extra_notes : "";
+    lastKnownRemoteTimestamp = seededList.updated_at || null;
+  } else {
+    products = normalizeProducts(sharedList.products);
+    extraNotes.value = typeof sharedList.extra_notes === "string" ? sharedList.extra_notes : "";
+    lastKnownRemoteTimestamp = sharedList.updated_at || null;
+  }
+
   saveProducts();
   saveExtraNotes();
   remoteReady = true;
   render();
   await subscribeToRealtimeState();
   startRemotePolling();
+  setSyncStatus("Lista condivisa sincronizzata.");
 }
 
 async function syncRemoteState() {
@@ -451,11 +460,12 @@ async function syncRemoteState() {
   pendingSync = false;
   setSyncStatus("Salvataggio...");
 
-  const { error } = await supabaseClient
-    .from("shopping_app_state")
+  const { data, error } = await supabaseClient
+    .from("shopping_lists")
     .update(getRemotePayload())
     .eq("id", stateRowId)
-    .eq("user_id", currentUser.id);
+    .select("updated_at")
+    .single();
 
   syncInProgress = false;
 
@@ -464,7 +474,7 @@ async function syncRemoteState() {
     return;
   }
 
-  lastKnownRemoteTimestamp = lastLocalSyncTimestamp;
+  lastKnownRemoteTimestamp = data?.updated_at || lastLocalSyncTimestamp;
   setSyncStatus("Salvato.");
 
   if (pendingSync) {
