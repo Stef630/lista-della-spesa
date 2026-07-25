@@ -152,6 +152,8 @@ let remoteReady = false;
 let syncInProgress = false;
 let pendingSync = false;
 let notesSyncTimer = null;
+let realtimeChannel = null;
+let lastLocalSyncTimestamp = null;
 
 assertRequiredElements();
 
@@ -275,11 +277,67 @@ function createSupabaseClient() {
 }
 
 function getRemotePayload() {
+  lastLocalSyncTimestamp = new Date().toISOString();
+
   return {
     products,
     extra_notes: extraNotes.value,
-    updated_at: new Date().toISOString()
+    updated_at: lastLocalSyncTimestamp
   };
+}
+
+function applyRemoteState(row) {
+  products = normalizeProducts(row.products);
+  extraNotes.value = typeof row.extra_notes === "string" ? row.extra_notes : "";
+  saveProducts();
+  saveExtraNotes();
+  render();
+  setSyncStatus("Aggiornato da un altro dispositivo.");
+}
+
+async function removeRealtimeSubscription() {
+  if (!realtimeChannel || !supabaseClient) return;
+
+  const channelToRemove = realtimeChannel;
+  realtimeChannel = null;
+  await supabaseClient.removeChannel(channelToRemove);
+}
+
+async function subscribeToRealtimeState() {
+  await removeRealtimeSubscription();
+
+  if (!supabaseClient || !stateRowId) return;
+
+  realtimeChannel = supabaseClient
+    .channel(`shopping-app-state:${stateRowId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "shopping_app_state",
+        filter: `id=eq.${stateRowId}`
+      },
+      payload => {
+        if (!payload.new) return;
+
+        if (payload.new.updated_at && payload.new.updated_at === lastLocalSyncTimestamp) {
+          setSyncStatus("Salvato.");
+          return;
+        }
+
+        applyRemoteState(payload.new);
+      }
+    )
+    .subscribe(status => {
+      if (status === "SUBSCRIBED") {
+        setSyncStatus("Lista sincronizzata in tempo reale.");
+      }
+
+      if (["CHANNEL_ERROR", "TIMED_OUT"].includes(status)) {
+        setSyncStatus("Lista sincronizzata. Aggiornamento live non disponibile al momento.", true);
+      }
+    });
 }
 
 async function loadOrCreateRemoteState() {
@@ -308,7 +366,7 @@ async function loadOrCreateRemoteState() {
     saveExtraNotes();
     remoteReady = true;
     render();
-    setSyncStatus("Lista sincronizzata.");
+    await subscribeToRealtimeState();
     return;
   }
 
@@ -337,7 +395,7 @@ async function loadOrCreateRemoteState() {
   saveExtraNotes();
   remoteReady = true;
   render();
-  setSyncStatus("Lista locale importata e sincronizzata.");
+  await subscribeToRealtimeState();
 }
 
 async function syncRemoteState() {
@@ -422,6 +480,7 @@ async function setupAuth() {
 
   supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT") {
+      removeRealtimeSubscription();
       currentUser = null;
       stateRowId = null;
       remoteReady = false;
