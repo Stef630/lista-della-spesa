@@ -130,6 +130,7 @@ const appView = document.getElementById("appView");
 const loginForm = document.getElementById("loginForm");
 const emailInput = document.getElementById("emailInput");
 const passwordInput = document.getElementById("passwordInput");
+const showPasswordToggle = document.getElementById("showPasswordToggle");
 const loginButton = document.getElementById("loginButton");
 const loginError = document.getElementById("loginError");
 const syncStatus = document.getElementById("syncStatus");
@@ -219,6 +220,7 @@ function assertRequiredElements() {
     loginForm,
     emailInput,
     passwordInput,
+    showPasswordToggle,
     loginButton,
     loginError,
     syncStatus,
@@ -687,6 +689,10 @@ if (extraNotes) {
   extraNotes.value = loadExtraNotes();
   extraNotes.addEventListener("input", saveExtraNotesEverywhere);
 }
+
+showPasswordToggle.addEventListener("change", () => {
+  passwordInput.type = showPasswordToggle.checked ? "text" : "password";
+});
 
 loginForm.addEventListener("submit", async event => {
   event.preventDefault();
