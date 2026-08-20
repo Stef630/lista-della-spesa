@@ -26,6 +26,7 @@ const defaultProducts = [
   { id: "broccoli", name: "Broccoli", image: "img/Broccoli.png", category: "Verdura", state: "catalog" },
   { id: "pomodori", name: "Pomodori", image: "img/Pomodori.png", category: "Verdura", state: "catalog" },
   { id: "carote", name: "Carote", image: "img/Carote.png", category: "Verdura", state: "catalog" },
+  { id: "barbabietole", name: "Barbabietole", image: "img/barbabietole.png", category: "Verdura", state: "catalog" },
   { id: "patate", name: "Patate", image: "img/Patate.png", category: "Verdura", state: "catalog" },
   { id: "finocchi", name: "Finocchi", image: "img/finocchi.png", category: "Verdura", state: "catalog" },
   { id: "zucchine", name: "Zucchine", image: "img/zucchine.png", category: "Verdura", state: "catalog" },
