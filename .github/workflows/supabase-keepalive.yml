@@ -10,7 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
-          curl -fsS "${{ secrets.SUPABASE_URL }}/rest/v1/shopping_lists?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_KEY }}"
+          echo "URL length: ${#SUPABASE_URL} | KEY length: ${#SUPABASE_KEY}"
+          echo "KEY prefix: ${SUPABASE_KEY:0:15}"
+          code=$(curl -sS -o /tmp/out -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/shopping_lists?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}")
+          echo "HTTP status: $code"
+          head -c 500 /tmp/out; echo
+          if [ "$code" -ge 400 ]; then exit 1; fi
